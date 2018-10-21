@@ -32,7 +32,7 @@ class Weather extends FetchModule {
   render() {
     return (
       <div className='weather big-text'>
-        <p>{this.state.description}</p>
+        <p>{this.state.name} : {this.state.description}</p>
          <i className={"biggest-text " + `wi ${ this.state.icon }`}></i>
         <span className="temperature biggest-text">{this.state.temperature} °C</span>
         <span id="minTemp"> &darr; </span><span>{this.state.min}°</span>

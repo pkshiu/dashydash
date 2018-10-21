@@ -1,3 +1,15 @@
+/*
+  FetchModule
+
+  A type of module that will fetch data from the client/browser side directly.
+  After fetching from the url (see below), the result is set to the self.callback(body) function.
+
+  Usage:
+  - set self.interval
+  - supply callback(body)
+
+*/
+
 "use strict";
 
 var React = require('react');

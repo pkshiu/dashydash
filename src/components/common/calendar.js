@@ -1,7 +1,8 @@
 'use strict';
 var ical = require('ical')
 var moment = require('moment');
-moment.locale('de');
+// require('moment/locale/zh-cn');
+// moment.locale('zh-cn');
 
 const maximumEntries = 20;
 const maximumNumberOfDays = 200;
@@ -26,13 +27,14 @@ function isFullDayEvent(event) {
 function formatDuration(startDate) {
   const today = moment().startOf("day").toDate();
   const days = startDate.diff(today, 'days');
+  // TODO: localize today / tomorrow words
   if (days === 0) {
-    return 'heute'; 
+    return 'today'; // 'heute'; 
   }
   else if (days === 1) {
-    return 'morgen'; 
+    return 'tomorrow'; // 'morgen'; 
   }
-  else if (days === 2) {
+  else if (days === 20000) {
     return 'übermorgen';
   }
   return startDate.format('dd. Do MMMM');
@@ -48,7 +50,7 @@ function formatTime(a) {
 }
 
 function getAppointments(text, calendarId) {
-  //console.log(text);
+  console.log(text);
   const data = ical.parseICS(text);
   let appointments = [];
   const now = new Date();

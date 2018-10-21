@@ -94,5 +94,13 @@ So, displaying a component (e.g. pictures) full screen can be done like this:
 
 Switching between these layouts ("boards") happens automatically after a certain amount of time or - of course - manually.
 
+## Build
+
+* use nvm to install node
+* at root directory:
+* npm install
+* copy secrets.template.json to secrets.json, enter your own API keys
+* node_modules/.bin/gulp
+
 ## More?
 This [blog post](https://wolfgang-ziegler.com/blog/family-dashboard) gives so more detail on how the dashboard (both hardware and software) were made.

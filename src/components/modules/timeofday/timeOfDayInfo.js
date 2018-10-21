@@ -413,8 +413,9 @@ var candidates = [
   birthday('Steffi', 23, 2),
   birthday('Timo', 16, 10),
   birthday('Nico', 2, 12),
-  birthday('Wolfgang', 10, 3),
-  
+//  birthday('Wolfgang', 10, 3),
+  birthday('Wolfgang', 10, 20),  
+
   {
     id : 'Workout',
     match : is(timeOfWeekDay(Day.Mon, 6, 7)).

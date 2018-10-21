@@ -1,3 +1,11 @@
+/* Server side weather
+
+  Need in secrets.json:
+  "weatherApiKey" : "_key_from_openweathermap_",
+  "weatherZip": "us_zip_code",
+
+*/
+
 'use strict';
 var serverFetcher = require('../../../serverFetcher');
 
@@ -22,16 +30,21 @@ const iconTable = {
   "50n": "wi-night-alt-cloudy-windy"
 };
 
-const apiKey = require('../../../secrets.json').weatherApiKey;
-const LOCATION = 'Gallneukirchen';
-const urlCondition = 'http://api.openweathermap.org/data/2.5/weather?q=' + 
-  LOCATION +
+const secrets = require('../../../secrets.json')
+const apiKey = secrets.weatherApiKey;
+const zip = secrets.weatherZip;
+// const LOCATION = 'Gallneukirchen';
+// units: metric / imperial, lan=de, en
+//const urlCondition = 'http://api.openweathermap.org/data/2.5/weather?q=' + 
+const urlCondition = 'http://api.openweathermap.org/data/2.5/weather?zip=' + 
+  zip +
   '&appid=' + apiKey +
-  '&units=metric&lang=de';
-const urlForecast = 'http://api.openweathermap.org/data/2.5/forecast/daily?q=' + 
-  LOCATION +
+  '&units=imperial&lang=en';
+
+const urlForecast = 'http://api.openweathermap.org/data/2.5/forecast/daily?zip=' + 
+  zip +
   '&appid=' + apiKey +
-  '&units=metric&lang=de&cnt=3';
+  '&units=imperial&lang=en&cnt=3';
 
 
 function getWeather(req, res) {

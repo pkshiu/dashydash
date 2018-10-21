@@ -1,8 +1,9 @@
 'use strict';
 var React = require('react');
 var moment = require('moment');
-require('moment/locale/de');
-moment.locale('de');
+// TODO: how to specify locale (was de)
+// require('moment/locale/zh-cn');
+// moment.locale('zh-cn');
 var FetchModule = require('./fetchModule.jsx');
 
 class Calendar extends FetchModule {
