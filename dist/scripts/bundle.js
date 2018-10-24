@@ -29384,8 +29384,9 @@ module.exports={
       "modules" : {     
         "pics" :         [ 1, 1, 4, 4 ],
         "appointments" : [ 1, 5, 2, 2 ],
-        "bus" :          [ 3, 5, 2, 2 ],
-        "pics.1" :       [ 5, 1, 5, 5 ],
+        "todo" :         [ 3, 5, 2, 2 ],
+        "pics.1" :       [ 5, 1, 4, 4 ],
+        "games" :         [5, 5, 1, 1],
         "weather" :      [ 5, 6, 5, 1 ]
       }
     }
