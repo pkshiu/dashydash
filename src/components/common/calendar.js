@@ -50,7 +50,7 @@ function formatTime(a) {
 }
 
 function getAppointments(text, calendarId) {
-  console.log(text);
+  //console.log(text);
   const data = ical.parseICS(text);
   let appointments = [];
   const now = new Date();

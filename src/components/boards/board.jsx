@@ -35,9 +35,11 @@ class Board extends React.Component {
   switchToBoard(board) {
     //console.log(board);
     if (board) {
-      setTimeout(() => {
-        this.switchToBoard(this.boards.next());
-      }, board.timeout);
+      if (board.timeout > 0) {
+        setTimeout(() => {
+          this.switchToBoard(this.boards.next());
+        }, board.timeout);
+      };
 
       this.setState({ 
         modules: []

@@ -102,5 +102,11 @@ Switching between these layouts ("boards") happens automatically after a certain
 * copy secrets.template.json to secrets.json, enter your own API keys
 * node_modules/.bin/gulp
 
+## Installation
+
+* You cannot build the application on the Raspberry Pi itself because node-sass is not supported on the ARM architecture.
+* You have to copy the dist folder to the pi after building it on the host machine
+
+
 ## More?
 This [blog post](https://wolfgang-ziegler.com/blog/family-dashboard) gives so more detail on how the dashboard (both hardware and software) were made.

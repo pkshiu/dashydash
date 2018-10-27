@@ -1,6 +1,19 @@
 'use strict';
 const moment = require('moment');
 
+/*
+  Board configuration in boards.config.json
+
+  if timeout is not specified, default to 20 (see below)
+  Timeout is used to move to the next board
+
+  board_collection_name
+    board_name
+      timeout
+      modules
+        module_name
+
+*/
 
 function getBoards(collection) {
   let boards = [];
@@ -10,7 +23,7 @@ function getBoards(collection) {
     if (!board.icon) {
       board.icon = 'fa-user-circle-o';
     }
-    if (!board.timeout) {
+    if (board.timeout === undefined) {
       board.timeout = 20;  // minutes
     }
     for (var m in board.modules) {

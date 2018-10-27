@@ -2,6 +2,7 @@
 const express = require('express');
 const bodyParser = require("body-parser");
 const ServerFetcher = require('./serverFetcher').ServerFetcher;
+const GoogleUtils = require('./google_utils');
 
 var app = module.exports = express();
 
@@ -36,6 +37,10 @@ function createRoutes() {
       }
     }
   });
+
+  // Add google API endpoints
+  router.get('/google/setup/', GoogleUtils.setup);
+  router.get('/google/done/', GoogleUtils.done);
   return router;
 }
 app.use(createRoutes());

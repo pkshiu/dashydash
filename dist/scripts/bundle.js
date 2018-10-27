@@ -29132,9 +29132,11 @@ class Board extends React.Component {
   switchToBoard(board) {
     //console.log(board);
     if (board) {
-      setTimeout(() => {
-        this.switchToBoard(this.boards.next());
-      }, board.timeout);
+      if (board.timeout > 0) {
+        setTimeout(() => {
+          this.switchToBoard(this.boards.next());
+        }, board.timeout);
+      };
 
       this.setState({ 
         modules: []
@@ -29191,6 +29193,19 @@ module.exports = Board;
 'use strict';
 const moment = require('moment');
 
+/*
+  Board configuration in boards.config.json
+
+  if timeout is not specified, default to 20 (see below)
+  Timeout is used to move to the next board
+
+  board_collection_name
+    board_name
+      timeout
+      modules
+        module_name
+
+*/
 
 function getBoards(collection) {
   let boards = [];
@@ -29200,7 +29215,7 @@ function getBoards(collection) {
     if (!board.icon) {
       board.icon = 'fa-user-circle-o';
     }
-    if (!board.timeout) {
+    if (board.timeout === undefined) {
       board.timeout = 20;  // minutes
     }
     for (var m in board.modules) {
@@ -29241,7 +29256,7 @@ module.exports={
       }
     },
     "dates" : {
-      "timeout" : 2,
+      "timeout" : 5,
       "modules" : {
         "appointments" :        [ 1, 1, 4, 6 ],
         "birthdays"   :         [ 5, 1, 4, 6 ]
@@ -29388,7 +29403,8 @@ module.exports={
         "pics.1" :       [ 5, 1, 4, 4 ],
         "games" :         [5, 5, 1, 1],
         "weather" :      [ 5, 6, 5, 1 ]
-      }
+      },
+      "timeout" : 0
     }
     /*
     ,
