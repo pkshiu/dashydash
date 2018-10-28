@@ -9,11 +9,15 @@
 */
 
 var request = require('request');
+var fs = require('fs');
+var path = require('path');
+
 const { google } = require('googleapis');
 
 var config = require('./secrets.json').pics;
 
 const redirectURL = 'http://localhost:3000/google/done';
+const IMAGE_DIR = './dist/images/photos';
 
 const oauth2Client = new google.auth.OAuth2(
   config.clientId,
@@ -45,6 +49,7 @@ function done(req, res) {
         oauth2Client.setCredentials(result.tokens);
         // Save in global
         config.token = result.tokens.access_token;
+        console.log(`token: ${config.token}`);
     });
   };
     res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
@@ -54,6 +59,7 @@ function done(req, res) {
 
 
 function listAlbums(req, res) {
+
 
   console.log('listing albums...');
   console.log(config.token);
@@ -65,9 +71,9 @@ function listAlbums(req, res) {
     auth: {'bearer': config.token},
   }, function(error, r, body) {
 
-    console.log(body);
+    // console.log(body);
     const s = body.albums.map(function(v) {
-      return `<li><a href="/google/albums/${v.id}">${v.title}</a></li>`;
+      return `<li><a href="/google/album/${v.id}">${v.title}</a></li>`;
     }).join();
 
     res.send('<ul>' + s + '</ul>');
@@ -76,25 +82,139 @@ function listAlbums(req, res) {
 
 
 
-function downloadAlbum(req, res) {
-  console.log('download album...');
-  console.log(req.query);
-  request.post({
-    url: 'https://photoslibrary.googleapis.com/v1/mediaItems:search',
-    headers: {'Content-Type': 'application/json'},
-    qs: {pageSize: 50, albumId: req.query.albumId},
-    json: true,
-    auth: {'bearer': config.token},
-  }, function(error, r, body) {
+/*
+  Get album content data from google API.
+  Return promise to return array of google mediaItems
+*/
+function getAlbumData(albumId) {
+
+  console.log(`get album data: ${albumId}...`);
+
+  return new Promise(function(resolve, reject) {
+
+  var req = request.post({
+      url: 'https://photoslibrary.googleapis.com/v1/mediaItems:search',
+      headers: {'Content-Type': 'application/json'},
+      qs: {pageSize: 50, albumId: albumId},
+      json: true,
+      auth: {'bearer': config.token},
+    }, function(err, r, body) {
+      if (err)
+        reject(err);
+
     console.log(body);
-    const s = body.mediaItems.map(function(v) {
+    resolve(body.mediaItems);
+  });
+
+
+  });
+};
+
+
+function listAlbumPhotos(req, res) {
+  console.log('list photos in album...');
+  console.log(req.params);
+  getAlbumData(req.params.albumId).then(function(items) {
+    const s = items.map(function(v) {
       return `<li><a href="/google/albums/${v.id}">${v.filename}</a></li>`;
     }).join();
 
-    res.send('<ul>' + s + '</ul>');
-  });
+  // also download the photo.... FOR NOW
 
+  const photoJobs = items.reduce(function(ls, v) {
+    var p = createDownloadJob(
+      { url: v.baseUrl,
+        filePath: path.join(IMAGE_DIR, v.filename),
+      });
+    console.log('created job');
+    console.log(p);
+    ls.push(p);
+    return ls;
+    }, []);
+
+  console.log(photoJobs);
+  res.send('<ul>' + s + '</ul>');
+  });
 };
+
+
+
+
+/*
+  Download one image
+
+  photo.filePath: path on disk
+  photo.url: google URL to get image (with auth)
+
+  return Promise, write photo to disk
+*/
+function createDownloadJob(photo) {
+  return new Promise(
+    function(resolve, reject) {
+      console.log("GET: " + photo.url);
+      request
+        .get(photo.url + "?imgmax=1280")
+        .pipe(fs.createWriteStream(photo.filePath)
+          .on('finish', resolve)
+        );
+    }
+  ).catch((e) => {
+    console.log(e);
+  });
+};
+
+
+function createImageListJob(albumId, startIndex) {
+  return function(result) {
+    return new Promise((resolve, reject) => {
+      request({
+        url: 'https://picasaweb.google.com/data/feed/api/user/default/albumid/' + albumId,
+        headers: {
+          'GData-Version': '2'
+        },
+        qs: {
+          access_token : config.token,
+          kind : 'photo',
+          alt : 'json',
+          'start-index' : startIndex,
+          fields : 'gphoto:numphotos, entry(title, content)'
+        },
+        method: 'GET',
+        json : true
+      }, function(error, response, body) {
+        if (error) {
+          console.log(error);
+        }
+        else {
+          try {
+              //console.log(body);
+              if (body.feed && body.feed.entry) {
+                //console.log(body.feed.entry.length);
+                let photos = body.feed.entry.reduce((filtered, entry) => {
+                  if (entry.content.type === 'image/jpeg') {
+                    const fileName = path.join(IMAGE_DIR, entry.title["$t"]);
+                    if (!fs.existsSync(fileName)) {
+                      filtered.push({
+                        fileName : fileName,
+                        url : entry.content.src
+                      });
+                    }
+                  }
+                  return filtered;
+                }, []);
+                result.push(...photos);
+              }
+          }
+          catch (e) {
+            console.log(e)
+          }
+          resolve(result);
+        }
+      });
+    });
+  }
+}
+
 
 module.exports = {
 
@@ -102,38 +222,11 @@ module.exports = {
     router.get('/google/setup/', setup);
     router.get('/google/done/', done);
     router.get('/google/albums/', listAlbums);
-    router.get('/google/albums/:albumId', downloadAlbum);
+    router.get('/google/album/:albumId', listAlbumPhotos);
   },
 
   setup : setup,
   done : done,
   listAlbums : listAlbums,
-
-  ServerFetcher : function(m) {
-    this.fetch = function(req, res) {
-      if (m.fetch) {
-        m.fetch(req, res);
-      }
-      else
-      {
-        request.get({
-          url : m.url,
-          json : true
-        },
-        function(err, httpResponse, body) {
-          if (err) {
-            console.log(err);
-            res.end();
-          }
-          else {
-            if (m.transform) {
-              body = m.transform(body);
-            }
-            res.json(body);
-          }
-        });
-      }
-    }
-    return this;
-  }
+  listAlbumPhotos: listAlbumPhotos,
 }
