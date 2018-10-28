@@ -25,12 +25,35 @@ const oauth2Client = new google.auth.OAuth2(
   redirectURL
   );
 
+// Note: google only ask user for approval of the permission if the previous approval
+// has timed out. If user is not prompted, we will not get a refresh_token.
+// So we force it here with approval_prompt=force
 const googleUrl = oauth2Client.generateAuthUrl({
   access_type: 'offline',
+  prompt: 'consent',
   scope: ['https://www.googleapis.com/auth/photoslibrary.readonly']
 });
 
+/*
+  Use the previously stored special refresh_token to get a new access token
+  TBW
+*/
+function refreshToken() {
 
+  console.log('refreshing token...')
+    if (req.query.code)
+    {
+    oauth2Client.getToken(req.query.code).then(
+      function(result) {
+        oauth2Client.setCredentials(result.tokens);
+        // Save in global
+        config.token = result.tokens.access_token;
+        console.log(`token: ${config.token}`);
+        console.log(result);
+    });
+  };
+    res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
+};
 
 
 function setup(req, res) {
@@ -45,11 +68,11 @@ function done(req, res) {
     {
     oauth2Client.getToken(req.query.code).then(
       function(result) {
-        //tokens.refresh_token();
         oauth2Client.setCredentials(result.tokens);
         // Save in global
         config.token = result.tokens.access_token;
         console.log(`token: ${config.token}`);
+        console.log(result.tokens);
     });
   };
     res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
@@ -59,7 +82,6 @@ function done(req, res) {
 
 
 function listAlbums(req, res) {
-
 
   console.log('listing albums...');
   console.log(config.token);
@@ -132,7 +154,16 @@ function listAlbumPhotos(req, res) {
     return ls;
     }, []);
 
-  console.log(photoJobs);
+    console.log(photoJobs);
+
+    const p = Promise.all(photoJobs);
+    p.then(() => {
+      // createDownloadJobs(jobs);
+      console.log('all downloaded!');
+    });
+
+
+
   res.send('<ul>' + s + '</ul>');
   });
 };
