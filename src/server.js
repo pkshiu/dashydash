@@ -39,8 +39,8 @@ function createRoutes() {
   });
 
   // Add google API endpoints
-  router.get('/google/setup/', GoogleUtils.setup);
-  router.get('/google/done/', GoogleUtils.done);
+  GoogleUtils.addRoutes(router);
+
   return router;
 }
 app.use(createRoutes());
