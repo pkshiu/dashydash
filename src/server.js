@@ -6,7 +6,7 @@ const GoogleUtils = require('./google_utils');
 
 var app = module.exports = express();
 
-if (process.env.NODE_ENV !== 'production') {
+if (false && process.env.NODE_ENV !== 'production') {
   app.use(require('connect-livereload')({
     port: 35729
   }));

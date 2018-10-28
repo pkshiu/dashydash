@@ -1,8 +1,17 @@
 'use strict';
+
+/*
+  Good references to figure out how to use the google photo API in express and googleapi module:
+
+  https://github.com/googlesamples/google-photos/blob/master/REST/PhotoFrame/app.js
+  https://medium.com/@jackrobertscott/how-to-use-google-auth-api-with-node-js-888304f7e3a0
+  https://developers.google.com/photos/library/guides/list  
+*/
+
 var request = require('request');
 const { google } = require('googleapis');
 
-const config = require('./secrets.json').pics;
+var config = require('./secrets.json').pics;
 
 const redirectURL = 'http://localhost:3000/google/done';
 
@@ -27,14 +36,15 @@ function setup(req, res) {
 
 function done(req, res) {
 
-    console.log(req.query);
+    // console.log(req.query);
     if (req.query.code)
     {
     oauth2Client.getToken(req.query.code).then(
-      function(tokens) {
-      console.log(tokens);
-      oauth2Client.setCredentials(tokens);
-      config.token = tokens;
+      function(result) {
+        //tokens.refresh_token();
+        oauth2Client.setCredentials(result.tokens);
+        // Save in global
+        config.token = result.tokens.access_token;
     });
   };
     res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
@@ -42,22 +52,49 @@ function done(req, res) {
 
 
 
+
 function listAlbums(req, res) {
+
   console.log('listing albums...');
+  console.log(config.token);
   request({
     url: 'https://photoslibrary.googleapis.com/v1/albums',
     headers: {'Content-Type': 'application/json'},
-    qs: {pageSize: 20},
+    qs: {pageSize: 50},
     json: true,
     auth: {'bearer': config.token},
   }, function(error, r, body) {
-    console.log(error);
-    console.log(r);
-    res.set('Content-Type', 'text/xml');
-    res.send(body);
+
+    console.log(body);
+    const s = body.albums.map(function(v) {
+      return `<li><a href="/google/albums/${v.id}">${v.title}</a></li>`;
+    }).join();
+
+    res.send('<ul>' + s + '</ul>');
   });
 };
 
+
+
+function downloadAlbum(req, res) {
+  console.log('download album...');
+  console.log(req.query);
+  request.post({
+    url: 'https://photoslibrary.googleapis.com/v1/mediaItems:search',
+    headers: {'Content-Type': 'application/json'},
+    qs: {pageSize: 50, albumId: req.query.albumId},
+    json: true,
+    auth: {'bearer': config.token},
+  }, function(error, r, body) {
+    console.log(body);
+    const s = body.mediaItems.map(function(v) {
+      return `<li><a href="/google/albums/${v.id}">${v.filename}</a></li>`;
+    }).join();
+
+    res.send('<ul>' + s + '</ul>');
+  });
+
+};
 
 module.exports = {
 
@@ -65,6 +102,7 @@ module.exports = {
     router.get('/google/setup/', setup);
     router.get('/google/done/', done);
     router.get('/google/albums/', listAlbums);
+    router.get('/google/albums/:albumId', downloadAlbum);
   },
 
   setup : setup,
