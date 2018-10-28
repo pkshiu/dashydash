@@ -13,5 +13,10 @@ module.exports = {
       dbs[name] = store;
     }
     return dbs[name];
+  },
+
+  // A default app wide database
+  appdb: function() {
+    return module.exports.get('dashy');
   }
 };

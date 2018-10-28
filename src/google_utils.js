@@ -11,6 +11,7 @@
 var request = require('request');
 var fs = require('fs');
 var path = require('path');
+var appdb = require('./components/common/db.js').appdb();
 
 const { google } = require('googleapis');
 
@@ -57,7 +58,20 @@ function refreshToken() {
 
 
 function setup(req, res) {
-    res.send(`Hi, <a href="${googleUrl}">Login with Google</a>`);
+
+    appdb.findOne({google_api: { $exists: true}},
+      function(err, docs) {
+        console.log(docs);
+        config.refreshToken = docs.google_api.refresh_token;
+        config.token = docs.google_api.access_token;
+
+      })
+
+    var s = `Hi, <a href="${googleUrl}">Login with Google</a>`;
+    if (config.token) {
+      s += 'but you do not need to...';
+    }
+    res.send(s);
 };
 
 
@@ -73,6 +87,9 @@ function done(req, res) {
         config.token = result.tokens.access_token;
         console.log(`token: ${config.token}`);
         console.log(result.tokens);
+
+        appdb.update({ google_api: { $exists: true}}, { google_api: result.tokens},
+          { upsert: true});
     });
   };
     res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
