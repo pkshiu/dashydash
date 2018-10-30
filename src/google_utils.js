@@ -35,25 +35,32 @@ const googleUrl = oauth2Client.generateAuthUrl({
   scope: ['https://www.googleapis.com/auth/photoslibrary.readonly']
 });
 
+
+function save_tokens(tokens) {
+  console.log('saving tokens:', tokens);
+  if (!tokens) {
+    return;
+  }
+  config.google_api = tokens;
+  console.log(`token: ${config.google_api}`);
+  appdb.update({ google_api: { $exists: true}}, { google_api: tokens},
+    { upsert: true});
+};
+
+
 /*
   Use the previously stored special refresh_token to get a new access token
   TBW
 */
-function refreshToken() {
+function refreshToken(tokens) {
 
-  console.log('refreshing token...')
-    if (req.query.code)
-    {
-    oauth2Client.getToken(req.query.code).then(
-      function(result) {
-        oauth2Client.setCredentials(result.tokens);
-        // Save in global
-        config.token = result.tokens.access_token;
-        console.log(`token: ${config.token}`);
-        console.log(result);
-    });
-  };
-    res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
+  console.log('refreshing token...');
+  oauth2Client.setCredentials(tokens);
+  oauth2Client.refreshAccessToken().then(function(result) {
+    console.log('token refreshed.');
+    save_tokens(result.credentials);
+    }, e => console.log(e));
+
 };
 
 
@@ -61,35 +68,35 @@ function setup(req, res) {
 
     appdb.findOne({google_api: { $exists: true}},
       function(err, docs) {
-        console.log(docs);
-        config.refreshToken = docs.google_api.refresh_token;
-        config.token = docs.google_api.access_token;
+        console.log('docs loaded:', docs);
 
+        var s = `Hi, <a href="${googleUrl}">Login with Google</a>`;
+
+        if (docs && docs.google_api) {
+          config.google_api = docs.google_api;
+
+          refreshToken(config.google_api);
+          console.log(config.google_api);
+
+          if (config.google_api.refresh_token) {
+            s += 'but you do not need to...';
+        };
+      };
+      res.send(s);
       })
-
-    var s = `Hi, <a href="${googleUrl}">Login with Google</a>`;
-    if (config.token) {
-      s += 'but you do not need to...';
-    }
-    res.send(s);
 };
 
 
 function done(req, res) {
 
-    // console.log(req.query);
+    console.log('Google OAuth called back...', req.query.code);
     if (req.query.code)
     {
     oauth2Client.getToken(req.query.code).then(
       function(result) {
         oauth2Client.setCredentials(result.tokens);
         // Save in global
-        config.token = result.tokens.access_token;
-        console.log(`token: ${config.token}`);
-        console.log(result.tokens);
-
-        appdb.update({ google_api: { $exists: true}}, { google_api: result.tokens},
-          { upsert: true});
+        save_tokens(result.tokens);
     });
   };
     res.send('Hi, and Done. <a href="/google/albums/">list albums</a>');
@@ -101,13 +108,13 @@ function done(req, res) {
 function listAlbums(req, res) {
 
   console.log('listing albums...');
-  console.log(config.token);
+  console.log(config.google_api.access_token);
   request({
     url: 'https://photoslibrary.googleapis.com/v1/albums',
     headers: {'Content-Type': 'application/json'},
     qs: {pageSize: 50},
     json: true,
-    auth: {'bearer': config.token},
+    auth: {'bearer': config.google_api.access_token},
   }, function(error, r, body) {
 
     // console.log(body);
@@ -136,7 +143,7 @@ function getAlbumData(albumId) {
       headers: {'Content-Type': 'application/json'},
       qs: {pageSize: 50, albumId: albumId},
       json: true,
-      auth: {'bearer': config.token},
+      auth: {'bearer': config.google_api.access_token},
     }, function(err, r, body) {
       if (err)
         reject(err);
@@ -221,7 +228,7 @@ function createImageListJob(albumId, startIndex) {
           'GData-Version': '2'
         },
         qs: {
-          access_token : config.token,
+          access_token : config.google_api.access_token,
           kind : 'photo',
           alt : 'json',
           'start-index' : startIndex,
