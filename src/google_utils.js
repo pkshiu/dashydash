@@ -3,6 +3,8 @@
 /*
   Good references to figure out how to use the google photo API in express and googleapi module:
 
+  https://github.com/googleapis/google-auth-library-nodejs
+
   https://github.com/googlesamples/google-photos/blob/master/REST/PhotoFrame/app.js
   https://medium.com/@jackrobertscott/how-to-use-google-auth-api-with-node-js-888304f7e3a0
   https://developers.google.com/photos/library/guides/list  
@@ -13,14 +15,14 @@ var fs = require('fs');
 var path = require('path');
 var appdb = require('./components/common/db.js').appdb();
 
-const { google } = require('googleapis');
+const { OAuth2Client } = require('google-auth-library');
 
 var config = require('./secrets.json').pics;
 
 const redirectURL = 'http://localhost:3000/google/done';
 const IMAGE_DIR = './dist/images/photos';
 
-const oauth2Client = new google.auth.OAuth2(
+const oauth2Client = new OAuth2Client(
   config.clientId,
   config.clientSecret,
   redirectURL
