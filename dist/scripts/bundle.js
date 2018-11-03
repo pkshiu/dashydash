@@ -29094,7 +29094,7 @@ ReactDOM.render(
   ),
   document.getElementById('app'));
 
-},{"./overlays.jsx":263,"./routes.jsx":264,"react":224,"react-dom":45,"react-router-dom":184}],230:[function(require,module,exports){
+},{"./overlays.jsx":264,"./routes.jsx":265,"react":224,"react-dom":45,"react-router-dom":184}],230:[function(require,module,exports){
 'use strict';
 var Cursor = require('../common/misc.jsx').Cursor;
 var React = require('react');
@@ -29114,6 +29114,7 @@ var Words = require('../modules/words/words.jsx');
 var Recipe = require('../modules/recipe/recipe.jsx');
 var ToDo = require('../modules/todo/todo.jsx');
 var Numbers = require('../modules/numbers/numbers.jsx');
+var Setup = require('../modules/setup/setup.jsx');
 var misc  = require('../common/misc.jsx');
 var BoardManager = require('./boardManager.jsx');
 
@@ -29189,7 +29190,7 @@ class Board extends React.Component {
 
 module.exports = Board;
 
-},{"../common/misc.jsx":238,"../modules/abc/abc.jsx":239,"../modules/appointments/appointments.jsx":240,"../modules/birthdays/birthdays.jsx":241,"../modules/blog/blog.jsx":242,"../modules/bus/bus.jsx":243,"../modules/family/family.jsx":244,"../modules/football/football.jsx":245,"../modules/games/games.jsx":249,"../modules/news/news.jsx":255,"../modules/numbers/numbers.jsx":256,"../modules/pics/pics.jsx":257,"../modules/recipe/recipe.jsx":258,"../modules/timeofday/timeofday.jsx":259,"../modules/todo/todo.jsx":260,"../modules/weather/weather.jsx":261,"../modules/words/words.jsx":262,"./boardManager.jsx":231,"react":224}],231:[function(require,module,exports){
+},{"../common/misc.jsx":238,"../modules/abc/abc.jsx":239,"../modules/appointments/appointments.jsx":240,"../modules/birthdays/birthdays.jsx":241,"../modules/blog/blog.jsx":242,"../modules/bus/bus.jsx":243,"../modules/family/family.jsx":244,"../modules/football/football.jsx":245,"../modules/games/games.jsx":249,"../modules/news/news.jsx":255,"../modules/numbers/numbers.jsx":256,"../modules/pics/pics.jsx":257,"../modules/recipe/recipe.jsx":258,"../modules/setup/setup.jsx":259,"../modules/timeofday/timeofday.jsx":260,"../modules/todo/todo.jsx":261,"../modules/weather/weather.jsx":262,"../modules/words/words.jsx":263,"./boardManager.jsx":231,"react":224}],231:[function(require,module,exports){
 'use strict';
 const moment = require('moment');
 
@@ -29405,7 +29406,15 @@ module.exports={
         "weather" :      [ 5, 6, 5, 1 ]
       },
       "timeout" : 0
-    }
+    },
+    "setup" : {
+      "modules" : {
+        "setup" :         [ 1, 1, 8, 6 ]
+      },
+      "timeout" : 0
+
+    },
+
     /*
     ,
     "TEST" : {
@@ -29585,7 +29594,8 @@ module.exports = Calendar;
   FetchModule
 
   A type of module that will fetch data from the client/browser side directly.
-  After fetching from the url (see below), the result is set to the self.callback(body) function.
+  After fetching from the url, the result is set to the self.callback(body) function.
+  The URL is always /api/module-name-in-lowercase/
 
   Usage:
   - set self.interval
@@ -31612,6 +31622,229 @@ class Recipe extends FetchModule {
 module.exports = Recipe;
 
 },{"../../common/blinkable.jsx":234,"../../common/fetchModule.jsx":236,"moment":36,"react":224}],259:[function(require,module,exports){
+(function (global){
+"use strict";
+var React = require('react');
+var moment = require('moment');
+var FetchModule = require('../../common/fetchModule.jsx');
+
+
+
+class AuthFlow extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      title : '',
+      description : '',
+      authenticated: false,
+      authUrl: '',
+      image : '',
+      isLoaded: false
+    };
+
+    this.openGoogle = this.openGoogle.bind(this);
+    this.doneGoogle = this.doneGoogle.bind(this);
+
+    global.doneGoogle = this.doneGoogle;
+  }
+
+  componentDidMount() {
+
+    /*
+      Find out if we need to send user to authenticate backend.
+    */
+    const opts = {
+      method: 'GET'
+    };
+    const url = '/api/setup';
+    let self = this;
+    fetch(url, opts).then(response => {
+      return response.json();
+    })
+    .then(body => {
+
+      this.setState({
+        isLoaded: true,
+        authenticated: body.authenticated,
+        description: body.description,
+        authUrl: body.authUrl
+      });
+    this.props.setAuthState(true);
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+    });
+  };
+
+  openGoogle() {
+    console.log('goign threre');
+    console.log(this.state.authUrl);
+    // window.open(this.state.authUrl, "auth", "height=400, width=400");
+    window.open("/google/done/", "auth", "toolbar=yes,menubar=yes,scrollbars=yes,resizable=yes,height=400,width=400");
+  };
+
+
+  doneGoogle() {
+    console.log("GOT IT");
+    this.props.setAuthState(true);
+  };
+
+  render() {
+    return (
+      React.createElement("div", {id: "setup", style: { backgroundImage: 'url(' + this.state.image + ')'}}, 
+        React.createElement("div", {className: "articleText"}, 
+          React.createElement("h1", null, "Setup Access to Google"), 
+          React.createElement("p", null, this.state.description), 
+
+          React.createElement("p", null, "Go here: ", this.authUrl), 
+          React.createElement("button", {type: "button", className: "btn primary", onClick: this.openGoogle}, "Connect")
+
+        )
+      )
+    );
+  }
+};
+
+
+
+
+
+class AlbumList extends React.Component {
+
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      albums: []
+    };
+
+    this.oneAlbum = this.oneAlbum.bind(this);
+  }
+
+
+  componentDidMount() {
+
+    /*
+      get albums
+    */
+
+    console.log('getting albums');
+
+    const opts = {
+      method: 'GET'
+    };
+    const url = '/api/albums';
+    let self = this;
+    fetch(url, opts).then(response => {
+      return response.json();
+    })
+    .then(body => {
+
+      this.setState({
+        albums: body
+      });
+      console.log('got albums', this.state.albums)
+
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+    });
+  };
+
+  oneAlbum(a) {
+    console.log(a);
+    return (React.createElement("li", {key: a.id}, React.createElement("img", {src: a.coverUrl, height: "100px"}), a.title))
+  }
+
+//      {this.state.albums.map(this.oneAlbum, this)}
+//      {[1,2,3].map(this.oneAlbum, this)}
+  render() {
+    console.log('render:', this.state.albums);
+    return (
+      React.createElement("div", null, 
+      React.createElement("h2", null, "Albums..."), 
+      React.createElement("ul", null, 
+      this.state.albums.map(this.oneAlbum)
+      )
+      )
+      )
+  }
+
+}
+
+
+class Setup extends React.Component {
+
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      authenticated: false,
+      isLoaded: false
+    };
+    console.log('constructor',this.state);
+
+    this.setAuthState = this.setAuthState.bind(this);
+  }
+
+
+  componentDidMount() {
+
+    /*
+      Find out if we need to send user to authenticate backend.
+    */
+
+    console.log('did mount:', this.state);
+    return;
+    const opts = {
+      method: 'GET'
+    };
+    const url = '/api/setup';
+    let self = this;
+    fetch(url, opts).then(response => {
+      return response.json();
+    })
+    .then(body => {
+
+      this.setState({
+        isLoaded: true,
+        authenticated: body.authenticated,
+        description: body.description,
+        authUrl: body.authUrl
+      })
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+    });
+  };
+
+
+  setAuthState(s) {
+    console.log('setting auth state', s);
+    this.setState({authenticated: s});
+    console.log('setup state:', this.state);
+  }
+
+  render() {
+    if (!this.state.authenticated) {
+      return (
+        React.createElement(AuthFlow, {setAuthState: this.setAuthState})
+        )
+    }
+    else return (
+      React.createElement("div", null, 
+        React.createElement("h1", null, "Done"), 
+        React.createElement(AlbumList, null)
+      )
+      )
+  }
+};
+
+module.exports = Setup;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],260:[function(require,module,exports){
 "use strict";
 var React = require('react');
 var moment = require('moment');
@@ -31653,7 +31886,7 @@ class TimeOfDay extends FetchModule {
 
 module.exports = TimeOfDay;
 
-},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],260:[function(require,module,exports){
+},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],261:[function(require,module,exports){
 'use strict';
 var React = require('react');
 var moment = require('moment');
@@ -31707,7 +31940,7 @@ class ToDo extends FetchModule {
 
 module.exports = ToDo;
 
-},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],261:[function(require,module,exports){
+},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],262:[function(require,module,exports){
 "use strict";
 var React = require('react');
 var moment = require('moment');
@@ -31754,7 +31987,7 @@ class Weather extends FetchModule {
 
 module.exports = Weather;
 
-},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],262:[function(require,module,exports){
+},{"../../common/fetchModule.jsx":236,"moment":36,"react":224}],263:[function(require,module,exports){
 'use strict';
 var React = require('react');
 var moment = require('moment');
@@ -31851,7 +32084,7 @@ class Words extends React.Component {
 
 module.exports = Words;
 
-},{"../../common/misc.jsx":238,"moment":36,"react":224}],263:[function(require,module,exports){
+},{"../../common/misc.jsx":238,"moment":36,"react":224}],264:[function(require,module,exports){
 'use strict';
 var React = require('react');
 var moment = require('moment');
@@ -31900,7 +32133,7 @@ class Overlays extends IntervalModule {
 
 module.exports = Overlays;
 
-},{"./components/common/intervalModule.jsx":237,"moment":36,"react":224}],264:[function(require,module,exports){
+},{"./components/common/intervalModule.jsx":237,"moment":36,"react":224}],265:[function(require,module,exports){
 "use strict";
 
 var React = require('react');

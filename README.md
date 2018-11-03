@@ -107,6 +107,14 @@ Switching between these layouts ("boards") happens automatically after a certain
 * You cannot build the application on the Raspberry Pi itself because node-sass is not supported on the ARM architecture.
 * You have to copy the dist folder to the pi after building it on the host machine
 
+## Implementing New Modules
+
+There are two base modules that you can build new components on.
+
+### FetchModule
+
+### IntervalModule
+ 
 
 ## More?
 This [blog post](https://wolfgang-ziegler.com/blog/family-dashboard) gives so more detail on how the dashboard (both hardware and software) were made.

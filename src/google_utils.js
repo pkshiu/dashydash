@@ -66,6 +66,36 @@ function refreshToken(tokens) {
 };
 
 
+function api_setup(req, res) {
+
+  let data = {
+    authenticated: false,
+    description: ''
+  };
+
+    appdb.findOne({google_api: { $exists: true}},
+      function(err, docs) {
+        console.log('docs loaded:', docs);
+
+        var s = `Hi, <a href="${googleUrl}">Login with Google</a>`;
+
+        if (docs && docs.google_api) {
+          config.google_api = docs.google_api;
+
+          refreshToken(config.google_api);
+          console.log(config.google_api);
+
+          if (config.google_api.refresh_token) {
+            s += 'but you do not need to...';
+            data.authenticated = true;
+          };
+        };
+      data.description = s;
+      data.authUrl = googleUrl;
+      res.json(data);
+      }); // loaded
+};
+
 function setup(req, res) {
 
     appdb.findOne({google_api: { $exists: true}},
@@ -105,6 +135,48 @@ function done(req, res) {
 };
 
 
+/** React pop up version
+*/
+function done2(req, res) {
+
+    res.send(`
+      <html>
+      <head>
+      <title>hi</title>
+      <script>
+      console.log('in frame');
+      opener.console.log('what?');
+      opener.doneGoogle();
+      </script>
+      </head>
+      <body>
+      </body>
+      </html>
+      `)
+};
+
+
+
+function api_albums(req, res) {
+
+  console.log('API listing albums...');
+  console.log(config.google_api.access_token);
+  request({
+    url: 'https://photoslibrary.googleapis.com/v1/albums',
+    headers: {'Content-Type': 'application/json'},
+    qs: {pageSize: 50},
+    json: true,
+    auth: {'bearer': config.google_api.access_token},
+  }, function(error, r, body) {
+
+    console.log(body);
+    const s = body.albums.map(function(v) {
+      return {id: v.id, title: v.title, coverUrl: v.coverPhotoBaseUrl};
+    });
+    console.log('album json', s);
+    res.json(s);
+  });
+};
 
 
 function listAlbums(req, res) {
@@ -276,8 +348,10 @@ function createImageListJob(albumId, startIndex) {
 module.exports = {
 
   addRoutes: function(router) {
+    router.get('/api/setup/', api_setup);
+    router.get('/api/albums/', api_albums);
     router.get('/google/setup/', setup);
-    router.get('/google/done/', done);
+    router.get('/google/done/', done2);
     router.get('/google/albums/', listAlbums);
     router.get('/google/album/:albumId', listAlbumPhotos);
   },
